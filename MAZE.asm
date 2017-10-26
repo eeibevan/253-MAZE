@@ -35,6 +35,9 @@ maze:
   MAZE_COLUMNS = 9
   MAZE_ROWS = 5
 
+  ;; Character
+  CHARACTER_CHARACTER = 1
+  CHARACTER_COLOR = 0xFh        ; White
   char_x db 2
   char_y db 2
 
@@ -58,8 +61,13 @@ _read_column:
   jnz _read_row                 ; Loop For Each Row
 
   ;; Hack The Character In For Now
-  GOTOXY 1, 2
-  PUTC 001
+  GOTOXY 2, 2
+  mov al, CHARACTER_CHARACTER
+  mov bl, CHARACTER_COLOR
+  mov ah, 9
+  xor bh, bh
+  mov cx, 1
+  int 10h
   ret
 
 parse_and_print proc
