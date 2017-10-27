@@ -1,3 +1,11 @@
+  ;; Author: Evan Black
+  ;; Purpose: Give A Small Demo of A Maze
+  ;;
+  ;; Algorithm:
+  ;;  Read Through Row/Column
+  ;;  Compare Found Byte To Known Shapes
+  ;;  Draw Shape On The Screen
+  ;;  Draw Player Character
 include emu8086.inc
 org 100h
 
@@ -12,13 +20,13 @@ org 100h
   ;; Wall
   WALL_CODE = 1                 ; Code In Data Structure
   WALL_CHARACTER = 219          ; Block
-  WALL_COLOR = 8                ; Dark Gray
+  WALL_COLOR = 0x8h             ; Dark Gray
   W = WALL_CODE                 ; Alias For Code
 
   ;; Water
   WATER_CODE = 2
   WATER_CHARACTER = 219         ; Block
-  WATER_COLOR = 3               ; Cyan
+  WATER_COLOR = 0x3h            ; Cyan
   Wa = WATER_CODE               ; Alias For Code
 
 
