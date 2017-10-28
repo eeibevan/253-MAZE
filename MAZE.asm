@@ -6,8 +6,7 @@ org 100h
 
   ;; Blank
   BLANK_CODE = 0                ; Code In Data Structure
-  BLANK_CHARACTER = 32          ; Space
-  BLANK_COLOR = 0               ; Black
+  BLANK_CHARACTER = ' '
   B = BLANK_CODE                ; Alias For Code
 
   ;; Wall
@@ -15,7 +14,6 @@ org 100h
   WALL_CHARACTER = 219          ; Block
   WALL_COLOR = 8                ; Dark Gray
   W = WALL_CODE                 ; Alias For Code
-
 
   ;; Water
   WATER_CODE = 2
@@ -51,7 +49,7 @@ _read_row:
 _read_column:
   mov al, byte ptr [si]
   push ax                       ; Partial Register Stall On A Real 8086 Chip!
-  call parse_and_print
+  call parse_print
   add sp, 2                     ; Clean Up Parameter
   inc si                        ; Move To Next Maze Byte
   dec cl                        ; Column Now Complete (For This Row)
@@ -61,7 +59,7 @@ _read_column:
   jnz _read_row                 ; Loop For Each Row
 
   ;; Hack The Character In For Now
-  GOTOXY 2, 2
+  GOTOXY [char_x], [char_y]
   mov al, CHARACTER_CHARACTER
   mov bl, CHARACTER_COLOR
   mov ah, 9
@@ -70,11 +68,16 @@ _read_column:
   int 10h
   ret
 
-parse_and_print proc
-  mov bp, sp
-  push ax
+; Print The Character Defined By character-code
+; Param:
+;    [Stack] Word character-code: The Code
+;    of a Predefined Character To Print
+parse_print proc
+  mov bp, sp                    ; Start Our Stack Frame
+  push ax                       ; Save All Used Registers
+  push bx
   push cx
-  mov ax, [bp+2]
+  mov ax, [bp+2]                ; Get character-code Param
 
   cmp ax, BLANK_CODE
   je _load_blank
@@ -84,43 +87,38 @@ parse_and_print proc
 
   cmp ax, WATER_CODE
   je _load_water
-  jne _load_blank               ; Fall Through Protection
 
 _load_blank:
-  mov al, BLANK_CHARACTER       ; Load Blank Character
-  mov bl, BLANK_COLOR           ; Load Blank Color (Move To Overwrite Previous Color)
-  jmp _end_parse_and_print      ; Jump To Print
+  PUTC BLANK_CHARACTER          ; Print Blank
+  jmp _after_cursor_adv         ; Jump After Advance Cursor Since No Color Is Associated
 _load_wall:
   mov al, WALL_CHARACTER        ; Load Wall Ascii Character
   mov bl, WALL_COLOR            ; Load Wall Color
-  jmp _end_parse_and_print      ; Jump To Print
+  jmp _print_advance_cursor     ; Jump To Print
 _load_water:
   mov al, WATER_CHARACTER       ; Load Water Ascii Character
   mov bl, WATER_COLOR           ; Load Water Color
-  jmp _end_parse_and_print      ; Jump To Print
+  jmp _print_advance_cursor     ; Jump To Print
 
-_end_parse_and_print:
+_print_advance_cursor:
   mov ah, 9                     ; Interrupt Code
   xor bh, bh                    ; Print On Page 0
   mov cx, 1                     ; Print Only One Character
   int 10h                       ; Print Character With Attribute
 
-  call advance_cursor           ; Move To The Next Position
+  advance_cursor                ; Move To The Next Position
 
-  pop cx
+_after_cursor_adv:              ; Label For Characters With No Color
+  pop cx                        ; Restore All Used Registers
+  pop bx
   pop ax
-  mov sp, bp
+  mov sp, bp                    ; Close Our Stack Frame
   ret
 endp
 
-advance_cursor proc
-  ;; These Interrupts Use A Nightmarish Amount of Registers
-  ;; TODO: Optimize Saved Regsters
-  push ax
-  push bx
-  push cx
-  push dx
-
+; Advance The Cursor One Column To The Right
+; Registers Used: ah, bh, dx, cx
+ADVANCE_CURSOR macro
   ;; Get Cursor Position
   mov ah, 3h
   xor bh, bh
@@ -131,11 +129,5 @@ advance_cursor proc
   ;; Set New Cursor Position
   mov ah, 2h
   int 10h
-
-  pop bx
-  pop cx
-  pop dx
-  pop ax
-  ret
-endp
+endm
 
