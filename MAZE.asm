@@ -12,14 +12,21 @@ org 100h
   ;; Wall
   WALL_CODE = 1                 ; Code In Data Structure
   WALL_CHARACTER = 219          ; Block
-  WALL_COLOR = 8                ; Dark Gray
-  W = WALL_CODE                 ; Alias For Code
+  WALL_COLOR = 0x8h             ; Dark Gray
+  W = WALL_CODE
 
   ;; Water
   WATER_CODE = 2
   WATER_CHARACTER = 219         ; Block
-  WATER_COLOR = 3               ; Cyan
+  WATER_COLOR = 0x3h            ; Cyan
   Wa = WATER_CODE               ; Alias For Code
+
+  ;; Electric
+  ELECTRIC_CODE = 3
+  ELECTRIC_COLOR = 0xEh         ; Yellow
+  ELECTRIC_CHARACTER = 219      ; Block
+  ELECTRIC_DAMAGE = 1           ; Hearts To Remove
+  E = ELECTRIC_CODE
 
 
 
@@ -28,7 +35,7 @@ maze:
   db W,  W,  W,  W,  W,  W,  W,  W,  W
   db W,  B,  B,  B,  W,  B,  B,  Wa, W
   db W,  B,  B,  B,  B,  B,  B,  B,  W
-  db W,  B,  B,  B,  W,  B,  B,  B,  W
+  db W,  B,  B,  B,  W,  B,  B,  E,  W
   db W,  W,  W,  W,  W,  W,  W,  W,  W
   MAZE_COLUMNS = 9
   MAZE_ROWS = 5
@@ -88,6 +95,9 @@ parse_print proc
   cmp ax, WATER_CODE
   je _load_water
 
+  cmp ax, ELECTRIC_CODE
+  je _load_electric
+
 _load_blank:
   PUTC BLANK_CHARACTER          ; Print Blank
   jmp _after_cursor_adv         ; Jump After Advance Cursor Since No Color Is Associated
@@ -96,9 +106,13 @@ _load_wall:
   mov bl, WALL_COLOR            ; Load Wall Color
   jmp _print_advance_cursor     ; Jump To Print
 _load_water:
-  mov al, WATER_CHARACTER       ; Load Water Ascii Character
-  mov bl, WATER_COLOR           ; Load Water Color
-  jmp _print_advance_cursor     ; Jump To Print
+  mov al, WATER_CHARACTER
+  mov bl, WATER_COLOR
+  jmp _print_advance_cursor
+_load_electric:
+  mov al,ELECTRIC_CHARACTER
+  mov bl, ELECTRIC_COLOR
+  jmp _print_advance_cursor
 
 _print_advance_cursor:
   mov ah, 9                     ; Interrupt Code
