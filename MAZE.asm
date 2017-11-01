@@ -66,14 +66,66 @@ _read_column:
   jnz _read_row                 ; Loop For Each Row
 
   ;; Hack The Character In For Now
-  GOTOXY [char_x], [char_y]
-  mov al, CHARACTER_CHARACTER
-  mov bl, CHARACTER_COLOR
-  mov ah, 9
-  xor bh, bh
-  mov cx, 1
-  int 10h
+  mov al, [char_x]
+  push ax
+  mov al, [char_y]
+  push ax
+  call draw_character
+  add sp, 4                     ; Clean 2 Params
+
+  mov bx, sp
+  mov al, 1                     ; src x
+  push ax
+  mov al, 2                     ; src y
+  push ax
+  mov al, 3                     ; dest x
+  push ax
+  mov al, 4                     ; dest y
+  push ax
+  xor ax, ax
+  call move_character
+  mov sp, bx
   ret
+
+move_character proc
+  mov bp, sp
+  push ax
+  push bx
+
+	mov al, [bp+8]                ; 1st Param, Source  X
+  mov ah, [bp+6]                ; 2nd Param, Source  Y
+  mov bl, [bp+4]                ; 3rd Param, Destination X
+  mov bh, [bp+2]                ; 4th Param, Destination Y
+
+
+  pop bx
+  pop ax
+  mov sp, bp
+  ret
+endp
+
+draw_character proc
+  mov bp, sp
+  push ax
+  push bx
+  push cx
+
+  mov al, [bp+4]
+  mov ah, [bp+2]
+  GOTOXY al, ah
+	mov al, CHARACTER_CHARACTER
+	mov bl, CHARACTER_COLOR
+	mov ah, 9
+	xor bh, bh
+	mov cx, 1
+	int 10h
+
+  pop cx
+  pop bx
+  pop ax
+  mov sp, bp
+  ret
+endp
 
 ; Print The Character Defined By character-code
 ; Param:
