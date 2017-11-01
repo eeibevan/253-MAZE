@@ -21,13 +21,20 @@ org 100h
   WALL_CODE = 1                 ; Code In Data Structure
   WALL_CHARACTER = 219          ; Block
   WALL_COLOR = 0x8h             ; Dark Gray
-  W = WALL_CODE                 ; Alias For Code
+  W = WALL_CODE
 
   ;; Water
   WATER_CODE = 2
   WATER_CHARACTER = 219         ; Block
   WATER_COLOR = 0x3h            ; Cyan
   Wa = WATER_CODE               ; Alias For Code
+
+  ;; Electric
+  ELECTRIC_CODE = 3
+  ELECTRIC_COLOR = 0xEh         ; Yellow
+  ELECTRIC_CHARACTER = 219      ; Block
+  ELECTRIC_DAMAGE = 1           ; Hearts To Remove
+  E = ELECTRIC_CODE
 
 
 
@@ -36,7 +43,7 @@ maze:
   db W,  W,  W,  W,  W,  W,  W,  W,  W
   db W,  B,  B,  B,  W,  B,  B,  Wa, W
   db W,  B,  B,  B,  B,  B,  B,  B,  W
-  db W,  B,  B,  B,  W,  B,  B,  B,  W
+  db W,  B,  B,  B,  W,  B,  B,  E,  W
   db W,  W,  W,  W,  W,  W,  W,  W,  W
   MAZE_COLUMNS = 9
   MAZE_ROWS = 5
@@ -67,14 +74,66 @@ _read_column:
   jnz _read_row                 ; Loop For Each Row
 
   ;; Hack The Character In For Now
-  GOTOXY [char_x], [char_y]
-  mov al, CHARACTER_CHARACTER
-  mov bl, CHARACTER_COLOR
-  mov ah, 9
-  xor bh, bh
-  mov cx, 1
-  int 10h
+  mov al, [char_x]
+  push ax
+  mov al, [char_y]
+  push ax
+  call draw_character
+  add sp, 4                     ; Clean 2 Params
+
+  mov bx, sp
+  mov al, 1                     ; src x
+  push ax
+  mov al, 2                     ; src y
+  push ax
+  mov al, 3                     ; dest x
+  push ax
+  mov al, 4                     ; dest y
+  push ax
+  xor ax, ax
+  call move_character
+  mov sp, bx
   ret
+
+move_character proc
+  mov bp, sp
+  push ax
+  push bx
+
+	mov al, [bp+8]                ; 1st Param, Source  X
+  mov ah, [bp+6]                ; 2nd Param, Source  Y
+  mov bl, [bp+4]                ; 3rd Param, Destination X
+  mov bh, [bp+2]                ; 4th Param, Destination Y
+
+
+  pop bx
+  pop ax
+  mov sp, bp
+  ret
+endp
+
+draw_character proc
+  mov bp, sp
+  push ax
+  push bx
+  push cx
+
+  mov al, [bp+4]
+  mov ah, [bp+2]
+  GOTOXY al, ah
+	mov al, CHARACTER_CHARACTER
+	mov bl, CHARACTER_COLOR
+	mov ah, 9
+	xor bh, bh
+	mov cx, 1
+	int 10h
+
+  pop cx
+  pop bx
+  pop ax
+  mov sp, bp
+  ret
+endp
 
 ; Print The Character Defined By character-code
 ; Param:
@@ -96,6 +155,9 @@ parse_print proc
   cmp ax, WATER_CODE
   je _load_water
 
+  cmp ax, ELECTRIC_CODE
+  je _load_electric
+
 _load_blank:
   PUTC BLANK_CHARACTER          ; Print Blank
   jmp _after_cursor_adv         ; Jump After Advance Cursor Since No Color Is Associated
@@ -104,9 +166,13 @@ _load_wall:
   mov bl, WALL_COLOR            ; Load Wall Color
   jmp _print_advance_cursor     ; Jump To Print
 _load_water:
-  mov al, WATER_CHARACTER       ; Load Water Ascii Character
-  mov bl, WATER_COLOR           ; Load Water Color
-  jmp _print_advance_cursor     ; Jump To Print
+  mov al, WATER_CHARACTER
+  mov bl, WATER_COLOR
+  jmp _print_advance_cursor
+_load_electric:
+  mov al,ELECTRIC_CHARACTER
+  mov bl, ELECTRIC_COLOR
+  jmp _print_advance_cursor
 
 _print_advance_cursor:
   mov ah, 9                     ; Interrupt Code
