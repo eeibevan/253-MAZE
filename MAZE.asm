@@ -51,7 +51,7 @@ maze:
   ;; Character
   CHARACTER_CHARACTER = 1
   CHARACTER_COLOR = 0xFh        ; White
-  char_x db 2
+  char_x db 1
   char_y db 2
 
 .code
@@ -93,19 +93,40 @@ _read_column:
   xor ax, ax
   call move_character
   mov sp, bx
+
   ret
 
 move_character proc
   mov bp, sp
   push ax
   push bx
+  push cx
 
-	mov al, [bp+8]                ; 1st Param, Source  X
-  mov ah, [bp+6]                ; 2nd Param, Source  Y
+	mov cl, [bp+8]                ; 1st Param, Source  X
+  mov ch, [bp+6]                ; 2nd Param, Source  Y
   mov bl, [bp+4]                ; 3rd Param, Destination X
   mov bh, [bp+2]                ; 4th Param, Destination Y
 
+  push bp
+  GOTOXY cl, ch
+  GET_ADDRESS cl, ch
+  push ax
+  call parse_print
+  add sp, 2
+  pop bp
 
+  push bp                       ; Save bp Since New proc Will Clobber
+  mov bl, [bp+4]
+  push bx
+  mov bl, [bp+2]
+  push bx
+	call draw_character
+	add sp, 4                     ; Clean 2 Params
+  pop bp                        ; Restore Base Pointer
+
+
+
+  pop cx
   pop bx
   pop ax
   mov sp, bp
@@ -180,7 +201,7 @@ _print_advance_cursor:
   mov cx, 1                     ; Print Only One Character
   int 10h                       ; Print Character With Attribute
 
-  advance_cursor                ; Move To The Next Position
+  ADVANCE_CURSOR                ; Move To The Next Position
 
 _after_cursor_adv:              ; Label For Characters With No Color
   pop cx                        ; Restore All Used Registers
@@ -204,4 +225,26 @@ ADVANCE_CURSOR macro
   mov ah, 2h
   int 10h
 endm
+
+; Convert x,y Coordinates To The Offest of The Character In The Maze In Memory
+; Return With ax
+; x, y bytes! Not Words!
+GET_ADDRESS macro x, y
+  push bx
+  xor bx, bx                    ; Clear Relevant Registers
+  xor ax, ax
+  mov bh, x                     ; Move x To bh In Case It's An Immediate
+  mov bl, y                     ; Same As x
+
+  ;; WIDTH * Y + X
+  mov al, MAZE_COLUMNS
+  mul bl                        ; Use bl Since X/Y Should Be Bytes & To Do Byte mul
+  add al, bh
+
+  pop bx
+endm
+
+
+DEFINE_PRINT_NUM
+DEFINE_PRINT_NUM_UNS
 
