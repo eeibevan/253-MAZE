@@ -10,8 +10,6 @@ include emu8086.inc
 org 100h
 
 .data
-
-
   ;; Blank
   BLANK_CODE = 0                ; Code In Data Structure
   BLANK_CHARACTER = ' '
@@ -33,17 +31,19 @@ org 100h
   ELECTRIC_CODE = 3
   ELECTRIC_COLOR = 0xEh         ; Yellow
   ELECTRIC_CHARACTER = 219      ; Block
-  ELECTRIC_DAMAGE = 1           ; Hearts To Remove
   E = ELECTRIC_CODE
 
-
-
+  ;; Goal
+  GOAL_CODE = 4
+  GOAL_COLOR = 0xFh             ; White
+  GOAL_CHARACTER = 197          ; Cross?
+  G = GOAL_CODE
 
 maze:
   db W,  W,  W,  W,  W,  W,  W,  W,  W
   db W,  B,  B,  B,  W,  B,  B,  Wa, W
   db W,  B,  B,  B,  B,  B,  B,  B,  W
-  db W,  B,  B,  B,  W,  B,  B,  E,  W
+  db W,  B,  B,  B,  W,  B,  G,  E,  W
   db W,  B,  B,  B,  W,  B,  B,  Wa, W
   db W,  B,  B,  B,  W,  B,  B,  Wa, W
   db W,  W,  W,  W,  W,  W,  W,  W,  W
@@ -125,6 +125,8 @@ _check_target:
   je _no_move_target
   cmp al, ELECTRIC_CODE
   je _no_move_target
+  cmp al, GOAL_CODE
+  je _goal_target
 
 _no_move_target:
   PUTC 7                        ; Beep
@@ -143,7 +145,10 @@ _move_redraw:
   mov [char_x], ch              ; Commit New x & y
   mov [char_y], cl
   jmp _get_keyboard_input
-
+_goal_target:
+  call clear_screen
+  GOTOXY 30, 12
+  PRINT "A WINNER IS YOU"
   ret
 
 move_character proc
@@ -236,6 +241,9 @@ parse_print proc
   cmp ax, ELECTRIC_CODE
   je _load_electric
 
+  cmp ax, GOAL_CODE
+  je _load_goal
+
 _load_blank:
   PUTC BLANK_CHARACTER          ; Print Blank
   jmp _after_cursor_adv         ; Jump After Advance Cursor Since No Color Is Associated
@@ -250,6 +258,10 @@ _load_water:
 _load_electric:
   mov al,ELECTRIC_CHARACTER
   mov bl, ELECTRIC_COLOR
+  jmp _print_advance_cursor
+_load_goal:
+  mov al, GOAL_CHARACTER
+  mov bl, GOAL_COLOR
   jmp _print_advance_cursor
 
 _print_advance_cursor:
@@ -267,13 +279,6 @@ _after_cursor_adv:              ; Label For Characters With No Color
   mov sp, bp                    ; Close Our Stack Frame
   ret
 endp
-
-
-PUT_ORANGE_STATUS macro
-  GOTOXY 40, 0
-  PRINT "Status: "
-
-endm
 
 ; Advance The Cursor One Column To The Right
 ; Registers Used: ah, bh, dx, cx
@@ -309,7 +314,7 @@ GET_ADDRESS macro x, y
   pop bx
 endm
 
-
+DEFINE_CLEAR_SCREEN
 DEFINE_PRINT_NUM
 DEFINE_PRINT_NUM_UNS
 
