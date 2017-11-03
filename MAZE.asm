@@ -44,9 +44,11 @@ maze:
   db W,  B,  B,  B,  W,  B,  B,  Wa, W
   db W,  B,  B,  B,  B,  B,  B,  B,  W
   db W,  B,  B,  B,  W,  B,  B,  E,  W
+  db W,  B,  B,  B,  W,  B,  B,  Wa, W
+  db W,  B,  B,  B,  W,  B,  B,  Wa, W
   db W,  W,  W,  W,  W,  W,  W,  W,  W
   MAZE_COLUMNS = 9
-  MAZE_ROWS = 5
+  MAZE_ROWS = 7
 
   ;; Character
   CHARACTER_CHARACTER = 1
@@ -81,18 +83,66 @@ _read_column:
   call draw_character
   add sp, 4                     ; Clean 2 Params
 
-  mov bx, sp
-  mov al, 1                     ; src x
-  push ax
-  mov al, 2                     ; src y
-  push ax
-  mov al, 3                     ; dest x
-  push ax
-  mov al, 4                     ; dest y
-  push ax
+_get_keyboard_input:
+  mov ch, [char_x]
+  mov cl, [char_y]
   xor ax, ax
+  int 16h
+  cmp al, 'w'
+  je _move_up
+  cmp al, 'a'
+  je _move_left
+  cmp al, 's'
+  je _move_down
+  cmp al, 'd'
+  je _move_right
+  jne _get_keyboard_input       ; Ignore Other Inputs
+
+_move_up:
+  dec cl
+  jmp _check_target
+_move_left:
+  dec ch
+  jmp _check_target
+_move_down:
+  inc cl
+  jmp _check_target
+_move_right:
+  inc ch
+  jmp _check_target
+
+_check_target:
+  GET_ADDRESS ch, cl
+  lea si, maze
+  add si, ax
+  xor ax, ax
+  mov al, [si]
+  cmp al, BLANK_CODE
+  je _move_redraw
+  cmp al, WATER_CODE
+	je _move_redraw
+  cmp al, WALL_CODE
+  je _no_move_target
+  cmp al, ELECTRIC_CODE
+  je _no_move_target
+
+_no_move_target:
+  PUTC 7                        ; Beep
+  jmp _get_keyboard_input
+_move_redraw:
+  mov al, [char_x]              ; src x
+  push ax
+  mov al, [char_y]              ; src y
+  push ax
+  mov al, ch                    ; dest x
+  push ax
+  mov al, cl                    ; dest y
+  push ax
   call move_character
-  mov sp, bx
+  add sp, 8                     ; Clean 4 Params
+  mov [char_x], ch              ; Commit New x & y
+  mov [char_y], cl
+  jmp _get_keyboard_input
 
   ret
 
@@ -101,19 +151,25 @@ move_character proc
   push ax
   push bx
   push cx
+  push dx
+  push si
 
 	mov cl, [bp+8]                ; 1st Param, Source  X
   mov ch, [bp+6]                ; 2nd Param, Source  Y
   mov bl, [bp+4]                ; 3rd Param, Destination X
   mov bh, [bp+2]                ; 4th Param, Destination Y
 
-  push bp
+  push bp                       ; Save bp Since New proc Will Clobber
   GOTOXY cl, ch
   GET_ADDRESS cl, ch
-  push ax
-  call parse_print
-  add sp, 2
-  pop bp
+  lea si, maze
+  add si, ax
+  xor dx, dx                    ; Clear dx For Partial Register Move
+  mov dl, byte ptr [si]         ; Get Character In Maze
+  push dx                       ; Pass Character To Print
+  call parse_print              ; Print Maze Character Over Old Character Position
+  add sp, 2                     ; Clean Param
+  pop bp                        ; Restore Base Pointer
 
   push bp                       ; Save bp Since New proc Will Clobber
   mov bl, [bp+4]
@@ -125,7 +181,8 @@ move_character proc
   pop bp                        ; Restore Base Pointer
 
 
-
+  pop si
+  pop dx
   pop cx
   pop bx
   pop ax
@@ -139,9 +196,9 @@ draw_character proc
   push bx
   push cx
 
-  mov al, [bp+4]
-  mov ah, [bp+2]
-  GOTOXY al, ah
+  mov cl, [bp+4]
+  mov ch, [bp+2]
+  GOTOXY cl, ch
 	mov al, CHARACTER_CHARACTER
 	mov bl, CHARACTER_COLOR
 	mov ah, 9
@@ -211,6 +268,13 @@ _after_cursor_adv:              ; Label For Characters With No Color
   ret
 endp
 
+
+PUT_ORANGE_STATUS macro
+  GOTOXY 40, 0
+  PRINT "Status: "
+
+endm
+
 ; Advance The Cursor One Column To The Right
 ; Registers Used: ah, bh, dx, cx
 ADVANCE_CURSOR macro
@@ -227,6 +291,7 @@ ADVANCE_CURSOR macro
 endm
 
 ; Convert x,y Coordinates To The Offest of The Character In The Maze In Memory
+; Pass With Anything But bx, al
 ; Return With ax
 ; x, y bytes! Not Words!
 GET_ADDRESS macro x, y
