@@ -50,6 +50,10 @@ maze:
   MAZE_COLUMNS = 9
   MAZE_ROWS = 7
 
+  ;; Legend Position
+  LEGEND_START_ROW = 0
+  LEGEND_START_COLUMN = 20
+
   ;; Character
   CHARACTER_CHARACTER = 1
   CHARACTER_COLOR = 0xFh        ; White
@@ -57,10 +61,9 @@ maze:
   char_y db 2
 
 .code
-
 _main:
-
   call render_maze
+  call render_legend
 
   ;; Character Inital Position
   mov al, [char_x]
@@ -121,7 +124,7 @@ _check_target:
   je _goal_target
 
 _no_move_target:
-  PUTC 7                        ; Beep
+  PUTC 7                        ; Beep (You Asked For This...)
   jmp _get_keyboard_input
 _move_redraw:
   mov al, [char_x]              ; src x
@@ -164,6 +167,40 @@ _read_column:
   PRINTN                        ; Print A New Line At The End of The Row
   dec ch                        ; Row Now Complete
   jnz _read_row                 ; Loop For Each Row
+  ret
+endp
+
+render_legend proc
+  push cx
+
+  mov ch, LEGEND_START_COLUMN
+  mov cl, LEGEND_START_ROW
+
+
+  GOTOXY ch, cl
+  PRINT "--Legend--"
+  add cl, 2
+
+  GOTOXY ch, cl
+  PRINT "Wall: "
+  PRINT_CODE WALL_CODE
+  inc cl
+
+  GOTOXY ch, cl
+  PRINT "Water: "
+  PRINT_CODE WATER_CODE
+  inc cl
+
+  GOTOXY ch, cl
+  PRINT "Electricity: "
+  PRINT_CODE ELECTRIC_CODE
+  inc cl
+
+  GOTOXY ch, cl
+  PRINT "Goal: "
+  PRINT_CODE GOAL_CODE
+
+  pop cx
   ret
 endp
 
@@ -328,6 +365,22 @@ GET_ADDRESS macro x, y
   add al, bh
 
   pop bx
+endm
+
+; Convenience Macro To Print A Character Defined By A Code
+; Params
+;   code Word - The Code of The Character To Print
+PRINT_CODE macro code
+  push bp
+  push ax
+
+  mov ax, code
+	push ax
+	call parse_print
+	add sp, 2
+
+  pop ax
+  pop bp
 endm
 
 DEFINE_CLEAR_SCREEN
