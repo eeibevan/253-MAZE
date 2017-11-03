@@ -46,17 +46,21 @@ org 100h
   G = GOAL_CODE
 
 maze:
-  db W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W
-  db W,  B,  B,  B,  W,  B,  B,  B,  B,  Wa, W
-  db W,  B,  B,  B,  B,  B,  B,  B,  B,  B,  W
-  db W,  B,  B,  B,  W,  B,  G,  B,  B,  E,  W
-  db W,  B,  B,  B,  W,  B,  B,  B,  B,  Ew, W
-  db W,  B,  B,  B,  W,  B,  B,  B,  B,  Ew, W
-  db W,  B,  B,  B,  B,  B,  B,  B,  B,  B,  W
-  db W,  B,  B,  B,  B,  B,  B,  B,  B,  B,  W
-  db W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W
-  MAZE_COLUMNS = 11
-  MAZE_ROWS = 9
+  db W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W
+  db W,  B,  B,  Ew, E,  Ew, B,  B,  B,  B,  Wa, Wa, Wa, W
+  db W,  B,  B,  Ew, Ew, Ew, B,  B,  B,  B,  B,  Wa, Wa, W
+  db W,  Wa, B,  B,  Ew, B,  B,  B,  B,  B,  B,  Wa, Wa, W
+  db W,  B,  B,  B,  B,  B,  B,  B,  B,  B,  B,  B,  Wa, W
+  db W,  B,  B,  B,  B,  W,  B,  B,  B,  B,  B,  B,  B,  W
+  db W,  B,  B,  B,  W,  G,  W,  B,  B,  B,  B,  B,  B,  W
+  db W,  B,  B,  W,  Wa, Wa, Wa, W,  B,  B,  B,  B,  B,  W
+  db W,  B,  W,  B,  B,  B,  B,  B,  W,  B,  B,  B,  B,  W
+  db W,  B,  Ew, B,  B,  B,  B,  B,  B,  W,  B,  B,  B,  W
+  db W,  Ew, Ew, Ew, B,  B,  B,  B,  B,  B,  W,  B,  B,  W
+  db W,  E,  Ew, Ew, B,  B,  B,  B,  B,  B,  B,  B,  B,  W
+  db W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W
+  MAZE_COLUMNS = 14
+  MAZE_ROWS = 13
 
   ;; Legend Position
   LEGEND_START_ROW = 0
