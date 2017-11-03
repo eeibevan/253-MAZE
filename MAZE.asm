@@ -31,24 +31,32 @@ org 100h
   ELECTRIC_CODE = 3
   ELECTRIC_COLOR = 0xEh         ; Yellow
   ELECTRIC_CHARACTER = 219      ; Block
-  E = ELECTRIC_CODE
+  E = ELECTRIC_CODE                      
+   
+  ;; Electrified Water 
+  ELECTRIC_WATER_CODE = 4
+  ELECTRIC_WATER_COLOR = 0xBh   ; Light Cyan
+  ELECTRIC_WATER_CHARACTER = WATER_CHARACTER
+  Ew = ELECTRIC_WATER_CODE
 
   ;; Goal
-  GOAL_CODE = 4
+  GOAL_CODE = 5
   GOAL_COLOR = 0xFh             ; White
   GOAL_CHARACTER = 197          ; Cross?
   G = GOAL_CODE
 
 maze:
-  db W,  W,  W,  W,  W,  W,  W,  W,  W
-  db W,  B,  B,  B,  W,  B,  B,  Wa, W
-  db W,  B,  B,  B,  B,  B,  B,  B,  W
-  db W,  B,  B,  B,  W,  B,  G,  E,  W
-  db W,  B,  B,  B,  W,  B,  B,  Wa, W
-  db W,  B,  B,  B,  W,  B,  B,  Wa, W
-  db W,  W,  W,  W,  W,  W,  W,  W,  W
-  MAZE_COLUMNS = 9
-  MAZE_ROWS = 7
+  db W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W
+  db W,  B,  B,  B,  W,  B,  B,  B,  B,  Wa, W
+  db W,  B,  B,  B,  B,  B,  B,  B,  B,  B,  W
+  db W,  B,  B,  B,  W,  B,  G,  B,  B,  E,  W
+  db W,  B,  B,  B,  W,  B,  B,  B,  B,  Ew, W
+  db W,  B,  B,  B,  W,  B,  B,  B,  B,  Ew, W
+  db W,  B,  B,  B,  B,  B,  B,  B,  B,  B,  W
+  db W,  B,  B,  B,  B,  B,  B,  B,  B,  B,  W
+  db W,  W,  W,  W,  W,  W,  W,  W,  W,  W,  W
+  MAZE_COLUMNS = 11
+  MAZE_ROWS = 9
 
   ;; Legend Position
   LEGEND_START_ROW = 0
@@ -116,7 +124,10 @@ _check_target:
 
   cmp al, WALL_CODE
   je _no_move_target
-
+    
+  cmp al, ELECTRIC_WATER_CODE
+  je _death_target  
+    
   cmp al, ELECTRIC_CODE
   je _death_target
 
@@ -144,7 +155,7 @@ _goal_target:
   call clear_screen
   GOTOXY 30, 12
   PRINT "A WINNER IS YOU"
-  ret
+  ret                                                                                                                ;hi wyatt
 _death_target:
   call clear_screen
   GOTOXY 35, 12
@@ -155,9 +166,9 @@ render_maze proc
   lea si, maze
   mov ch, MAZE_ROWS
 _read_row:
-	mov cl, MAZE_COLUMNS
+  mov cl, MAZE_COLUMNS
 _read_column:
-	mov al, byte ptr [si]
+  mov al, byte ptr [si]
   push ax                       ; Partial Register Stall On A Real 8086 Chip!
   call parse_print
   add sp, 2                     ; Clean Up Parameter
@@ -195,6 +206,11 @@ render_legend proc
   PRINT "Electricity: "
   PRINT_CODE ELECTRIC_CODE
   inc cl
+  
+  GOTOXY ch, cl
+  PRINT "Electrified Water: "
+  PRINT_CODE ELECTRIC_WATER_CODE
+  inc cl
 
   GOTOXY ch, cl
   PRINT "Goal: "
@@ -212,7 +228,7 @@ move_character proc
   push dx
   push si
 
-	mov cl, [bp+8]                ; 1st Param, Source  X
+  mov cl, [bp+8]                ; 1st Param, Source  X
   mov ch, [bp+6]                ; 2nd Param, Source  Y
   mov bl, [bp+4]                ; 3rd Param, Destination X
   mov bh, [bp+2]                ; 4th Param, Destination Y
@@ -234,8 +250,8 @@ move_character proc
   push bx
   mov bl, [bp+2]
   push bx
-	call draw_character
-	add sp, 4                     ; Clean 2 Params
+  call draw_character
+  add sp, 4                     ; Clean 2 Params
   pop bp                        ; Restore Base Pointer
 
 
@@ -257,12 +273,12 @@ draw_character proc
   mov cl, [bp+4]
   mov ch, [bp+2]
   GOTOXY cl, ch
-	mov al, CHARACTER_CHARACTER
-	mov bl, CHARACTER_COLOR
-	mov ah, 9
-	xor bh, bh
-	mov cx, 1
-	int 10h
+  mov al, CHARACTER_CHARACTER
+  mov bl, CHARACTER_COLOR
+  mov ah, 9
+  xor bh, bh
+  mov cx, 1
+  int 10h
 
   pop cx
   pop bx
@@ -293,6 +309,9 @@ parse_print proc
 
   cmp ax, ELECTRIC_CODE
   je _load_electric
+  
+  cmp ax, ELECTRIC_WATER_CODE
+  je _load_electric_water
 
   cmp ax, GOAL_CODE
   je _load_goal
@@ -309,9 +328,13 @@ _load_water:
   mov bl, WATER_COLOR
   jmp _print_advance_cursor
 _load_electric:
-  mov al,ELECTRIC_CHARACTER
+  mov al, ELECTRIC_CHARACTER
   mov bl, ELECTRIC_COLOR
   jmp _print_advance_cursor
+_load_electric_water:
+  mov al, ELECTRIC_WATER_CHARACTER
+  mov bl, ELECTRIC_WATER_COLOR 
+  jmp _print_advance_cursor 
 _load_goal:
   mov al, GOAL_CHARACTER
   mov bl, GOAL_COLOR
@@ -375,9 +398,9 @@ PRINT_CODE macro code
   push ax
 
   mov ax, code
-	push ax
-	call parse_print
-	add sp, 2
+  push ax
+  call parse_print
+  add sp, 2
 
   pop ax
   pop bp
