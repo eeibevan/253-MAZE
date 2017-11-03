@@ -59,23 +59,10 @@ maze:
 .code
 
 _main:
-  lea si, maze
-  mov ch, MAZE_ROWS
-_read_row:
-  mov cl, MAZE_COLUMNS
-_read_column:
-  mov al, byte ptr [si]
-  push ax                       ; Partial Register Stall On A Real 8086 Chip!
-  call parse_print
-  add sp, 2                     ; Clean Up Parameter
-  inc si                        ; Move To Next Maze Byte
-  dec cl                        ; Column Now Complete (For This Row)
-  jnz _read_column              ; Loop For Every Column In One Row
-  PRINTN                        ; Print A New Line At The End of The Row
-  dec ch                        ; Row Now Complete
-  jnz _read_row                 ; Loop For Each Row
 
-  ;; Hack The Character In For Now
+  call render_maze
+
+  ;; Character Inital Position
   mov al, [char_x]
   push ax
   mov al, [char_y]
@@ -117,14 +104,19 @@ _check_target:
   add si, ax
   xor ax, ax
   mov al, [si]
+
   cmp al, BLANK_CODE
   je _move_redraw
+
   cmp al, WATER_CODE
 	je _move_redraw
+
   cmp al, WALL_CODE
   je _no_move_target
+
   cmp al, ELECTRIC_CODE
-  je _no_move_target
+  je _death_target
+
   cmp al, GOAL_CODE
   je _goal_target
 
@@ -150,6 +142,30 @@ _goal_target:
   GOTOXY 30, 12
   PRINT "A WINNER IS YOU"
   ret
+_death_target:
+  call clear_screen
+  GOTOXY 35, 12
+  PRINT "YOU DIED"
+  ret
+
+render_maze proc
+  lea si, maze
+  mov ch, MAZE_ROWS
+_read_row:
+	mov cl, MAZE_COLUMNS
+_read_column:
+	mov al, byte ptr [si]
+  push ax                       ; Partial Register Stall On A Real 8086 Chip!
+  call parse_print
+  add sp, 2                     ; Clean Up Parameter
+  inc si                        ; Move To Next Maze Byte
+  dec cl                        ; Column Now Complete (For This Row)
+  jnz _read_column              ; Loop For Every Column In One Row
+  PRINTN                        ; Print A New Line At The End of The Row
+  dec ch                        ; Row Now Complete
+  jnz _read_row                 ; Loop For Each Row
+  ret
+endp
 
 move_character proc
   mov bp, sp
